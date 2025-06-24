@@ -26,11 +26,24 @@ app.use(express.static("uploads"))
 app.use(cookieParser())
 
 
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://gwl-v5-front.vercel.app',
+  'https://gwl-v5-front-git-main-dipanshupatel858-gmailcoms-projects.vercel.app',
+  'https://gwl-v5-front-tujhhagfu-dipanshupatel858-gmailcoms-projects.vercel.app'
+];
+
 app.use(cors({
-	origin:"http://localhost:3000 || https://gwl-v5-front-it0jejha7-dipanshupatel858-gmailcoms-projects.vercel.app/",
-	methods:["GET","POST","PUT","DELETE","PATCH"],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  	methods:["GET","POST","PUT","DELETE","PATCH"],
 	allowedHeaders:["Content-Type","Authorization"],
-	credentials:true,
+  credentials: true // only if you're using cookies or sessions
 }));
 
 app.get("/", (req, res) => {
