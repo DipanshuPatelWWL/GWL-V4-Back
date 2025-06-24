@@ -27,7 +27,7 @@ app.use(cookieParser())
 
 
 app.use(cors({
-	origin:"http://localhost:3000",
+	origin:"http://localhost:3000 || https://gwl-v5-front-it0jejha7-dipanshupatel858-gmailcoms-projects.vercel.app/",
 	methods:["GET","POST","PUT","DELETE","PATCH"],
 	allowedHeaders:["Content-Type","Authorization"],
 	credentials:true,
