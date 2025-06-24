@@ -25,9 +25,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("uploads"))
 app.use(cookieParser())
 
-// cors
+
 app.use(cors({
-	origin:"http://localhost:3000",
+	origin:"http://localhost:3000" || "https://gwl-v5-front-zqmc.vercel.app",
 	methods:["GET","POST","PUT","DELETE","PATCH"],
 	allowedHeaders:["Content-Type","Authorization"],
 	credentials:true,
