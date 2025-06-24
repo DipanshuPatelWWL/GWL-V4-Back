@@ -145,7 +145,7 @@ router.get("/getlowermanager/:id", lowermanager);
 router.put("/update-lowermanager/:managerid", updatelowerManager)
 router.put("/update-singleLM/:id", updatesingleLManager)
 router.get("/allLowermanager", getallLowermanager);
-router.patch("/deletelowermanager", softdeletelowermanager);
+router.patch("/deletelowermanager/:id", softdeletelowermanager);
 router.get("/getLastLowerMan",getLastLowerManId)
 
 module.exports = router;

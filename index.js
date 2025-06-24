@@ -34,7 +34,7 @@ const allowedOrigins = [
   'https://gwl-v5-front-tujhhagfu-dipanshupatel858-gmailcoms-projects.vercel.app'
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -43,8 +43,11 @@ app.use(cors({
   },
   	methods:["GET","POST","PUT","DELETE","PATCH"],
 	allowedHeaders:["Content-Type","Authorization"],
-  credentials: true // only if you're using cookies or sessions
-}));
+  credentials: true // only if you're using cookies or sessions,
+};
+
+app.use(cors(corsOptions));
+app.options('*',cors(corsOptions));
 
 app.get("/", (req, res) => {
     console.log(req)
