@@ -325,7 +325,7 @@ exports.getLastAddEmpOffer =async (req,res) =>{
   if(!lastEmpOfferId){
     return res.status(200).json({
       success : true,
-      lastEmpOfferId : 0,
+      lastEmpOfferId : "0",
       message : "No Employee Offer Found"
     }
     )

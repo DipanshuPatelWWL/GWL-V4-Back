@@ -380,8 +380,12 @@ exports.getallcompany = async (req, res) => {
   try {
     const company = await Company.find({ isDeleted: false })
       .populate({
+        path:"employee",
+        match:{isDeleted:false,status:"Approved"}
+      })
+      .populate({
         path: "customers",
-        match: { isDeleted: false }, // <-- only customers where isDeleted is false
+        match: { isDeleted: false,status:"Approved" },
       })
       .sort({ createdAt: -1 });
 
@@ -399,60 +403,130 @@ exports.getallcompany = async (req, res) => {
 };
 
 // update company
+// exports.updatecompany = async (req, res) => {
+//   try {
+//     const { companyId } = req.params;
+//     const { name, address, email, phone, employeeid } = req.body;
+//     if (!name || !address || !email || !phone || !employeeid) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "please fill in all fields"
+//       })
+//     }
+//     const company = await Company.findOne({ companyId });
+//     if (!company) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "company not found.",
+//       });
+//     }
+
+//      const oldEmployee = await Employee.findOne({
+//           employeeid: company.employee
+//         });
+//         const newEmployee = await Employee.findOne({ employeeid });
+    
+//         if (!newEmployee) {
+//           return res.status(400).json({
+//             success: false,
+//             message: "New employee not found",
+//           });
+//         }
+    
+//         // Update employee reference if employeeid changed
+//         if (company.employee !== employeeid) {
+//           if (oldEmployee) {
+//             oldEmployee.customers.pull(company._id);
+//             await oldEmployee.save();
+//           }
+    
+//           newEmployee.customers.addToSet(customer._id); // avoid duplicates
+//           await newEmployee.save();
+//         }
+      
+//     res.status(200).json({
+//       success: true,
+//       message: "company updated successfully.",
+//       company,
+//     });
+//   }
+//   catch (err) {
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// }
+
+
+// update company
 exports.updatecompany = async (req, res) => {
   try {
     const { companyId } = req.params;
     const { name, address, email, phone, employeeid } = req.body;
+
     if (!name || !address || !email || !phone || !employeeid) {
       return res.status(400).json({
         success: false,
-        message: "please fill in all fields"
-      })
-    }
-    const company = await Company.findOne({ companyId });
-    if (!company) {
-      return res.status(404).json({
-        success: false,
-        message: "company not found.",
+        message: "Please fill in all fields",
       });
     }
 
-     const oldEmployee = await Employee.findOne({
-          employeeid: company.employeeid,
-        });
-        const newEmployee = await Employee.findOne({ employeeid });
-    
-        if (!newEmployee) {
-          return res.status(400).json({
-            success: false,
-            message: "New employee not found",
-          });
-        }
-    
-        // Update employee reference if employeeid changed
-        if (company.employeeid !== employeeid) {
-          if (oldEmployee) {
-            oldEmployee.customers.pull(company._id);
-            await oldEmployee.save();
-          }
-    
-          newEmployee.customers.addToSet(customer._id); // avoid duplicates
-          await newEmployee.save();
-        }
-      
+    const company = await Company.findOne({ companyId });
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found.",
+      });
+    }
+
+    const newEmployee = await Employee.findOne({ employeeid });
+
+    if (!newEmployee) {
+      return res.status(400).json({
+        success: false,
+        message: "New employee not found",
+      });
+    }
+
+    // Remove company from old employee(s)
+    if (company.employee && company.employee.length > 0) {
+      const oldEmployees = await Employee.find({ _id: { $in: company.employee } });
+
+      for (const oldEmp of oldEmployees) {
+        oldEmp.company.pull(company._id);
+        await oldEmp.save();
+      }
+    }
+
+    // Add company to new employee's company list
+    newEmployee.company.addToSet(company._id);
+    await newEmployee.save();
+
+    // Update company fields
+    company.name = name;
+    company.companyaddress = address;
+    company.email = email;
+    company.phone = phone;
+    company.employee = [newEmployee._id]; // replace with new employee
+
+    await company.save();
+
     res.status(200).json({
       success: true,
-      message: "company updated successfully.",
+      message: "Company updated successfully.",
       company,
     });
-  }
-  catch (err) {
+
+  } catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message,
     });
   }
-}
+};
+
 
 // get single Company data
 exports.getCompany = async (req, res) => {
