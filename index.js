@@ -29,9 +29,9 @@ app.use(cookieParser())
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://gwl-v5-front.vercel.app',
-  'https://gwl-v5-front-git-main-dipanshupatel858-gmailcoms-projects.vercel.app',
-  'https://gwl-v5-front-tujhhagfu-dipanshupatel858-gmailcoms-projects.vercel.app'
+  'https://gwl-v5-front.vercel.app'
+//   'https://gwl-v5-front-git-main-dipanshupatel858-gmailcoms-projects.vercel.app',
+//   'https://gwl-v5-front-tujhhagfu-dipanshupatel858-gmailcoms-projects.vercel.app'
 ];
 
 const corsOptions = {
@@ -50,7 +50,6 @@ app.use(cors(corsOptions));
 // app.options('*',cors(corsOptions));
 
 app.get("/", (req, res) => {
-    console.log(req)
 	return res.json({
 		success:true,
 		message:'Your server is up and running....'
