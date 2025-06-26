@@ -246,15 +246,36 @@ exports.employee = async (req, res) => {
 };
 
 // get all employee
-exports.getallemployee = async (req, res) => {
+exports.getallemployee = async ( req, res) => {
   try {
     const employees = await Employee.find({ isDeleted: false })
       .populate({
         path: "company",
-        match: { isDeleted: false },
-        match: { status:"Approved" }, 
+        match: { isDeleted: false,status:"Approved" },
       })
       .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Employee data fetched successfully",
+      employees,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.getleaderboard = async (req, res) => {
+  try {
+    const employees = await Employee.find({ isDeleted: false })
+      .populate({
+        path: "company",
+        match: { isDeleted: false, status: "Approved" },
+      })
+      .sort({ points: -1 }); 
 
     res.status(200).json({
       success: true,

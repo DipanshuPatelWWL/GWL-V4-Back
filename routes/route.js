@@ -5,14 +5,14 @@ const { signup, login, user, updateCustomer, getallcustomer, softdeletecustomer,
 
 const { signupAdmin, loginAdmin, admin, updateadmin } = require("../controllers/admin-controller");
 
-const { signupEmployee, loginEmployee, getallemployee, updateEmployee, employee, monthlysaleform, employeeaddpoints, employeedeletepoints, softdeleteemployee, updatesingleemployee, approveEmp, deleteEmp, rejectEmp, requestpoints, allrequest, pointsreview, getLastEmpId } = require("../controllers/employee-controller");
+const { signupEmployee, loginEmployee, getallemployee, updateEmployee, employee, monthlysaleform, softdeleteemployee, updatesingleemployee, approveEmp, deleteEmp, rejectEmp, requestpoints, allrequest, pointsreview, getLastEmpId, getleaderboard } = require("../controllers/employee-controller");
 
 const { signupManager, loginManager, manager, getallmanager, softdeletemanager, updateManager, updatesingleSManager, getLastSuperManId } = require("../controllers/manager-controller");
 
-const authenticatetoken = require("../middleware/auth-middleware");
-const validate = require("../middleware/validate-middleware")
-const loginSchema = require("../validators/user-validator");
-const addcustomerschema = require("../validators/user-validator");
+// const authenticatetoken = require("../middleware/auth-middleware");
+// const validate = require("../middleware/validate-middleware")
+// const loginSchema = require("../validators/user-validator");
+// const addcustomerschema = require("../validators/user-validator");
 
 const { createOffer, getalloffer, updateoffer, softdeleteoffer, approveOffer, deleteOffer, rejectOffer, getSingleCustomerOffer, getapproveoffer, getLastOfferId} = require('../controllers/offer-controller');
 
@@ -53,7 +53,6 @@ router.get("/allemployee", getallemployee);
 router.get("/employee/:id", employee);
 router.put('/update-employee/:employeeid', updateEmployee);
 router.put("/monthlysaleform/:id", monthlysaleform);
-//.
 router.patch("/deleteemployee/:id", softdeleteemployee);
 router.put("/updatesingleemployee/:id", updatesingleemployee);
 router.put("/approveEmp/:id", approveEmp);
@@ -62,6 +61,7 @@ router.put("/rejectEmp/:id", rejectEmp);
 router.post("/request", requestpoints);
 router.get("/allrequest", allrequest);
 router.post('/review/:id', pointsreview);
+router.get('/empleader',getleaderboard);
 
 // manager routes
 router.post("/signupManager", signupManager);

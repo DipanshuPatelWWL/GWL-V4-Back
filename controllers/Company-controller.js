@@ -424,83 +424,20 @@ exports.getallcompany = async (req, res) => {
   }
 };
 
-// update company
 exports.updatecompany = async (req, res) => {
   try {
     const { companyId } = req.params;
-    const { name, address, email, phone, employeeid } = req.body;
-    if (!name || !address || !email || !phone || !employeeid) {
+    const { name, companyaddress, email, phone, employeeid } = req.body;
+
+    // Validate fields
+    if (!name || !companyaddress || !email || !phone || !employeeid) {
       return res.status(400).json({
         success: false,
-        message: "please fill in all fields",
+        message: "please fill in all fields"
       });
     }
 
     const company = await Company.findOne({ companyId });
-    if (!company) {
-      return res.status(404).json({
-        success: false,
-        message: "company not found.",
-      });
-    }
-
-    const oldEmployee = await Employee.findOne({
-      employeeid: company.employeeid,
-    });
-    const newEmployee = await Employee.findOne({ employeeid });
-
-    if (!newEmployee) {
-      return res.status(400).json({
-        success: false,
-        message: "New employee not found",
-      });
-    }
-
-    // Update employee reference if employeeid changed
-    if (company.employeeid !== employeeid) {
-      if (oldEmployee) {
-        oldEmployee.company.pull(company._id);
-        await oldEmployee.save();
-      }
-
-      newEmployee.company.addToSet(company._id); // avoid duplicates
-      await newEmployee.save();
-    }
-
-    company.name = name;
-    company.companyaddress = companyaddress;
-    company.email = email;
-    company.phone = phone;
-    await company.save();
-    
-    res.status(200).json({
-      success: true,
-      message: "company updated successfully.",
-      company,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-};
-
-// update company
-exports.updatecompany = async (req, res) => {
-  try {
-    const { companyId } = req.params;
-    const { name, address, email, phone, employeeid } = req.body;
-
-    if (!name || !address || !email || !phone || !employeeid) {
-      return res.status(400).json({
-        success: false,
-        message: "Please fill in all fields",
-      });
-    }
-
-    const company = await Company.findOne({ companyId });
-
     if (!company) {
       return res.status(404).json({
         success: false,
@@ -508,37 +445,39 @@ exports.updatecompany = async (req, res) => {
       });
     }
 
-    const newEmployee = await Employee.findOne({ employeeid });
+    const oldEmployeeId = company.employeeid;
 
-    if (!newEmployee) {
-      return res.status(400).json({
-        success: false,
-        message: "New employee not found",
-      });
-    }
+    // Check if employeeid is being changed
+    if (oldEmployeeId !== employeeid) {
+      const oldEmployee = await Employee.findOne({ employeeid: oldEmployeeId });
+      const newEmployee = await Employee.findOne({ employeeid });
 
-    // Remove company from old employee(s)
-    if (company.employee && company.employee.length > 0) {
-      const oldEmployees = await Employee.find({
-        _id: { $in: company.employee },
-      });
-
-      for (const oldEmp of oldEmployees) {
-        oldEmp.company.pull(company._id);
-        await oldEmp.save();
+      if (!newEmployee) {
+        return res.status(400).json({
+          success: false,
+          message: "New employee not found",
+        });
       }
+
+      // Remove company reference from old employee
+      if (oldEmployee) {
+        oldEmployee.company.pull(company._id);
+        await oldEmployee.save();
+      }
+
+      // Add company reference to new employee
+      newEmployee.company.addToSet(company._id);
+      await newEmployee.save();
+
+      //  Update employeeid in the company only if changed
+      company.employeeid = employeeid;
     }
 
-    // Add company to new employee's company list
-    newEmployee.company.addToSet(company._id);
-    await newEmployee.save();
-
-    // Update company fields
+    // Always update other company fields
     company.name = name;
-    company.companyaddress = address;
+    company.companyaddress = companyaddress;
     company.email = email;
     company.phone = phone;
-    company.employee = [newEmployee._id]; // replace with new employee
 
     await company.save();
 
