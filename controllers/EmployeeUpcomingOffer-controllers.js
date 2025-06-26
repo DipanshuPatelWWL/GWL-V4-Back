@@ -154,8 +154,6 @@ exports.employeegetallupcomapproveoffer = async (req, res) => {
 exports.getSingleEmpUpOffer = async (req, res) => {
   try {
     const offerData = await upcomingOffer.findById(req.params.id);
-    console.log(offerData);
-
     if (!offerData) {
       return res.status(404).json({
         success: false,

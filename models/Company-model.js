@@ -6,6 +6,10 @@ const companySchema = new mongoose.Schema({
     required:true,
     unique:true,
   },
+   employeeid:{
+    type:String,
+    required:true,
+  },
   name:{
     type: String,
     required: true,
@@ -45,6 +49,10 @@ const companySchema = new mongoose.Schema({
   },
   manager:{
      type:String,
+  },
+  employeeid:{
+    type:String,
+    required:true,
   },
   customers: [
     {

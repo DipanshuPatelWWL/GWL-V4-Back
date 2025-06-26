@@ -4,14 +4,14 @@ const Customer = require("../models/customer-model");
 const Company = require("../models/Company-model");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const PointRequest =require("../models/Companypoints-model");
-const Employee = require("../models/employee-model")
+const PointRequest = require("../models/Companypoints-model");
+const Employee = require("../models/employee-model");
 
 exports.requestcompanypoints = async (req, res) => {
   try {
     const { companyId, type, value, manager, notification } = req.body;
 
-    if (!type || !value || !manager || !notification ) {
+    if (!type || !value || !manager || !notification) {
       return res.status(400).json({
         success: false,
         message: "Please provide all required details",
@@ -50,7 +50,6 @@ exports.requestcompanypoints = async (req, res) => {
       message: "Request submitted for admin approval.",
       request,
     });
-
   } catch (err) {
     console.error("Error:", err);
     return res.status(500).json({
@@ -61,122 +60,144 @@ exports.requestcompanypoints = async (req, res) => {
 };
 
 // Admin approves or disapproves request
-exports.companypointsreview = async(req,res)=>{
-  try{
+exports.companypointsreview = async (req, res) => {
+  try {
     const { approved } = req.body;
     const request = await PointRequest.findById(req.params.id);
- 
-  if (!request || request.status !== 'pending') {
-    return res.status(400).json({ success: false, message: 'Invalid or already processed request.' });
-  }
- 
-  if (approved) {
 
-    const company = await Company.findById(request.company);
-    if (!company) return res.status(404).json({
-      message: 'company not found'
-    });
- 
-    if (request.type === 'add') {
-      company.points += request.value;
-      
-      const TROPHY_TIERS = [
-     { color: 'gold', points: 3000 },
-     { color: 'silver', points: 1000 },
-     { color: 'blue', points: 300 }
-    ];
- 
-    function getCurrentTrophy(points) {
-    for (let tier of TROPHY_TIERS) {
-    if (points >= tier.points) return tier.color;
+    if (!request || request.status !== "pending") {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Invalid or already processed request.",
+        });
     }
-      return null;
-    }
-      const now = new Date();
-      const newTrophy = getCurrentTrophy(company.points);
-      if (company.trophy) {
-      const expiry = new Date(company.trophyDate);
-      expiry.setFullYear(expiry.getFullYear() + 1);
- 
-      if (now > expiry) {
-        company.trophy = getCurrentTrophy(company.points);
-        company.trophyDate = company.trophy ? now : null;
-      } else {
-        const currentTierIndex = TROPHY_TIERS.findIndex(t => t.color === company.trophy);
-        const newTierIndex = TROPHY_TIERS.findIndex(t => t.color === newTrophy);
-        if (newTrophy && newTierIndex < currentTierIndex) {
+
+    if (approved) {
+      const company = await Company.findById(request.company);
+      if (!company)
+        return res.status(404).json({
+          message: "company not found",
+        });
+
+      if (request.type === "add") {
+        company.points += request.value;
+
+        const TROPHY_TIERS = [
+          { color: "gold", points: 3000 },
+          { color: "silver", points: 1000 },
+          { color: "blue", points: 300 },
+        ];
+
+        function getCurrentTrophy(points) {
+          for (let tier of TROPHY_TIERS) {
+            if (points >= tier.points) return tier.color;
+          }
+          return null;
+        }
+        const now = new Date();
+        const newTrophy = getCurrentTrophy(company.points);
+        if (company.trophy) {
+          const expiry = new Date(company.trophyDate);
+          expiry.setFullYear(expiry.getFullYear() + 1);
+
+          if (now > expiry) {
+            company.trophy = getCurrentTrophy(company.points);
+            company.trophyDate = company.trophy ? now : null;
+          } else {
+            const currentTierIndex = TROPHY_TIERS.findIndex(
+              (t) => t.color === company.trophy
+            );
+            const newTierIndex = TROPHY_TIERS.findIndex(
+              (t) => t.color === newTrophy
+            );
+            if (newTrophy && newTierIndex < currentTierIndex) {
+              company.trophy = newTrophy;
+              company.trophyDate = now;
+            }
+          }
+        } else if (newTrophy) {
           company.trophy = newTrophy;
           company.trophyDate = now;
         }
+      } else {
+        company.points = Math.max(0, company.points - request.value);
       }
-    } else if (newTrophy) {
-      company.trophy = newTrophy;
-      company.trophyDate = now;
-    }
+
+      await company.save();
+      request.status = "approved";
+      request.message = "Request approved and points updated.";
     } else {
-      company.points = Math.max(0, company.points - request.value);
+      request.status = "disapproved";
+      request.message = "Request disapproved. No changes made.";
     }
-      
-    await company.save();
-    request.status = 'approved';
-    request.message = 'Request approved and points updated.';
-  } else {
-    request.status = 'disapproved';
-    request.message = 'Request disapproved. No changes made.';
-  }
- 
-  await request.save();
-  res.status(200).json({
-    success: true,
-    message: request.message,
-    request
-  });
-  }
-  catch(err){
+
+    await request.save();
+    res.status(200).json({
+      success: true,
+      message: request.message,
+      request,
+    });
+  } catch (err) {
     res.status(400).json({
-      success:false,
-      message:err.message
-    })
+      success: false,
+      message: err.message,
+    });
   }
 };
- 
+
 // Get all requests (for admin dashboard)
-exports.allcompanyrequest=async(req,res)=>{
-  try{
+exports.allcompanyrequest = async (req, res) => {
+  try {
     const requests = await PointRequest.find().populate({
-      path:'company',
-      match:{status:'Approved',isDeleted:false}
-    })
-    res.status(200).json({
-      success:true,
-      message:"get all request",
-      requests
+      path: "company",
+      match: { status: "Approved", isDeleted: false },
     });
-}
-catch(err){
-  res.status(400).json({
-      success:false,
-      message:err.message
-    })
-}
-}
+    res.status(200).json({
+      success: true,
+      message: "get all request",
+      requests,
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 // create company
 exports.CreateCompany = async (req, res) => {
   try {
-    const { companyId, name, manager,email,phone,companyaddress,employeeid } = req.body;
-    if (!companyId || !name || !manager || !email || !phone || !companyaddress) {
+    const {
+      companyId,
+      name,
+      manager,
+      email,
+      phone,
+      companyaddress,
+      employeeid,
+    } = req.body;
+    if (
+      !companyId ||
+      !name ||
+      !manager ||
+      !email ||
+      !phone ||
+      !companyaddress
+    ) {
       return res.status(400).json({
         success: false,
         message: "Please fill in all fields",
       });
     }
-    const cmp=await Company.findOne({email});
-    if(cmp){
+    const cmp = await Company.findOne({ email });
+    if (cmp) {
       return res.status(400).json({
-        success:false,
-        message:"Email already exists"
-      })
+        success: false,
+        message: "Email already exists",
+      });
     }
     const companyexist = await Company.findOne({ companyId });
     if (companyexist) {
@@ -193,14 +214,18 @@ exports.CreateCompany = async (req, res) => {
         message: "Invalid email format",
       });
     }
-     // customer will not created if employee not exist
-        const existingemployee = await Employee.findOne({  employeeid: employeeid, status: "Approved",isDeleted: false });
-        if (!existingemployee) {
-          return res.status(400).json({
-            success: false,
-            message: "Employee not found or not eligible",
-          });
-        }
+    // customer will not created if employee not exist
+    const existingemployee = await Employee.findOne({
+      employeeid: employeeid,
+      status: "Approved",
+      isDeleted: false,
+    });
+    if (!existingemployee) {
+      return res.status(400).json({
+        success: false,
+        message: "Employee not found or not eligible",
+      });
+    }
     const newCompany = await Company({
       name,
       companyId,
@@ -208,7 +233,7 @@ exports.CreateCompany = async (req, res) => {
       email,
       phone,
       companyaddress,
-      employee: existingemployee._id
+      employee: existingemployee._id,
     });
 
     let token = jwt.sign({ id: newCompany._id }, process.env.JWT_SECRET, {
@@ -221,7 +246,7 @@ exports.CreateCompany = async (req, res) => {
         message: "Customer already exists in this employee's customers list",
       });
     }
-    
+
     // Add the new user to the employee's customers array
     existingemployee.company.push(newCompany._id);
     await existingemployee.save();
@@ -257,7 +282,7 @@ exports.rejectcompany = async (req, res) => {
     }
 
     // Update status to rejected
-    company.status = 'Rejected';
+    company.status = "Rejected";
     await company.save();
 
     res.status(200).json({
@@ -265,7 +290,6 @@ exports.rejectcompany = async (req, res) => {
       message: "company rejected successfully.",
       company,
     });
-
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -290,7 +314,7 @@ exports.approvecompany = async (req, res) => {
     }
 
     // Check if already approved
-    if (company.status === 'Approved') {
+    if (company.status === "Approved") {
       return res.status(400).json({
         success: false,
         message: "company is already approved.",
@@ -298,7 +322,7 @@ exports.approvecompany = async (req, res) => {
     }
 
     // Update status to Approved
-    company.status = 'Approved';
+    company.status = "Approved";
     await company.save();
 
     res.status(200).json({
@@ -306,7 +330,6 @@ exports.approvecompany = async (req, res) => {
       message: "company approved successfully.",
       company,
     });
-
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -330,7 +353,7 @@ exports.deletecompany = async (req, res) => {
     }
 
     // Update status to deleted
-    company.status = 'Delete';
+    company.status = "Delete";
     await company.save();
 
     res.status(200).json({
@@ -338,7 +361,6 @@ exports.deletecompany = async (req, res) => {
       message: "company delete successfully.",
       company,
     });
-
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -380,12 +402,12 @@ exports.getallcompany = async (req, res) => {
   try {
     const company = await Company.find({ isDeleted: false })
       .populate({
-        path:"employee",
-        match:{isDeleted:false,status:"Approved"}
+        path: "employee",
+        match: { isDeleted: false, status: "Approved" },
       })
       .populate({
         path: "customers",
-        match: { isDeleted: false,status:"Approved" },
+        match: { isDeleted: false, status: "Approved" },
       })
       .sort({ createdAt: -1 });
 
@@ -403,61 +425,66 @@ exports.getallcompany = async (req, res) => {
 };
 
 // update company
-// exports.updatecompany = async (req, res) => {
-//   try {
-//     const { companyId } = req.params;
-//     const { name, address, email, phone, employeeid } = req.body;
-//     if (!name || !address || !email || !phone || !employeeid) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "please fill in all fields"
-//       })
-//     }
-//     const company = await Company.findOne({ companyId });
-//     if (!company) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "company not found.",
-//       });
-//     }
+exports.updatecompany = async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const { name, address, email, phone, employeeid } = req.body;
+    if (!name || !address || !email || !phone || !employeeid) {
+      return res.status(400).json({
+        success: false,
+        message: "please fill in all fields",
+      });
+    }
 
-//      const oldEmployee = await Employee.findOne({
-//           employeeid: company.employee
-//         });
-//         const newEmployee = await Employee.findOne({ employeeid });
-    
-//         if (!newEmployee) {
-//           return res.status(400).json({
-//             success: false,
-//             message: "New employee not found",
-//           });
-//         }
-    
-//         // Update employee reference if employeeid changed
-//         if (company.employee !== employeeid) {
-//           if (oldEmployee) {
-//             oldEmployee.customers.pull(company._id);
-//             await oldEmployee.save();
-//           }
-    
-//           newEmployee.customers.addToSet(customer._id); // avoid duplicates
-//           await newEmployee.save();
-//         }
-      
-//     res.status(200).json({
-//       success: true,
-//       message: "company updated successfully.",
-//       company,
-//     });
-//   }
-//   catch (err) {
-//     return res.status(500).json({
-//       success: false,
-//       message: err.message,
-//     });
-//   }
-// }
+    const company = await Company.findOne({ companyId });
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: "company not found.",
+      });
+    }
 
+    const oldEmployee = await Employee.findOne({
+      employeeid: company.employeeid,
+    });
+    const newEmployee = await Employee.findOne({ employeeid });
+
+    if (!newEmployee) {
+      return res.status(400).json({
+        success: false,
+        message: "New employee not found",
+      });
+    }
+
+    // Update employee reference if employeeid changed
+    if (company.employeeid !== employeeid) {
+      if (oldEmployee) {
+        oldEmployee.company.pull(company._id);
+        await oldEmployee.save();
+      }
+
+      newEmployee.company.addToSet(company._id); // avoid duplicates
+      await newEmployee.save();
+    }
+
+    company.name = name;
+    company.companyaddress = companyaddress;
+    company.email = email;
+    company.phone = phone;
+    await company.save();
+    
+    res.status(200).json({
+      success: true,
+      message: "company updated successfully.",
+      company,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 // update company
 exports.updatecompany = async (req, res) => {
@@ -492,7 +519,9 @@ exports.updatecompany = async (req, res) => {
 
     // Remove company from old employee(s)
     if (company.employee && company.employee.length > 0) {
-      const oldEmployees = await Employee.find({ _id: { $in: company.employee } });
+      const oldEmployees = await Employee.find({
+        _id: { $in: company.employee },
+      });
 
       for (const oldEmp of oldEmployees) {
         oldEmp.company.pull(company._id);
@@ -518,7 +547,6 @@ exports.updatecompany = async (req, res) => {
       message: "Company updated successfully.",
       company,
     });
-
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -527,11 +555,10 @@ exports.updatecompany = async (req, res) => {
   }
 };
 
-
 // get single Company data
 exports.getCompany = async (req, res) => {
   try {
-    const compData = await Company.findById(req.params.id)
+    const compData = await Company.findById(req.params.id);
     if (!compData) {
       return res.status(404).json({
         success: false,
@@ -551,12 +578,11 @@ exports.getCompany = async (req, res) => {
   }
 };
 
-
 // get last added customer Id
 exports.getLastComId = async (req, res) => {
   try {
     const lastComId = await Company.findOne({})
-      .sort({ createdAt:-1 })
+      .sort({ createdAt: -1 })
       .select("companyId");
 
     if (!lastComId) {

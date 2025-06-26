@@ -7,7 +7,6 @@ const authenticatetoken = async (req, res, next) => {
     const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).send('Access denied. No token provided.');
 
-    //console.log("token", token);
     try {
         const decode = jwt.verify(token, process.env.JWT_SECRET);
         if (!decode) {
@@ -18,7 +17,6 @@ const authenticatetoken = async (req, res, next) => {
         }
 
         const userdata = await User.findOne({ email: decode.email }).select("-password");
-        //console.log(userdata);
         req.user = userdata;
         req.token = token;
         req.userId = userdata._id;
